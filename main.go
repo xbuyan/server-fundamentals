@@ -16,7 +16,14 @@ func sendError(w http.ResponseWriter, code int, message string) {
 	w.WriteHeader(code)
 	fmt.Fprintf(w, message)
 }
+func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		log.Printf("%s %s", r.Method, r.URL.Path)
+		next(w, r)
+	}
+}
 func methodMiddleware(next http.HandlerFunc, allowedMethod string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != allowedMethod {
@@ -57,8 +64,8 @@ func main() {
 
 	//Tell Go: When someone requests "/", run homeHandler
 
-	http.HandleFunc("/", methodMiddleware(homeHandler, "GET"))
-	http.HandleFunc("/about", methodMiddleware(aboutHandler, "GET"))
+	http.HandleFunc("/", loggingMiddleware(methodMiddleware(homeHandler, "GET")))
+	http.HandleFunc("/about", loggingMiddleware(methodMiddleware(aboutHandler, "GET")))
 
 	// Start listening on port 9090
 	// This line BLOCKS — meaning the program stays running, waiting
