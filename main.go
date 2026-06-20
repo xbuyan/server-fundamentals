@@ -4,35 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"server-fundamentals/middleware"
 )
-
-// send Error is a helper that sends an error response in one line
-// code = the HTTP status code to send
-// message = the human readable explanation
-//By putting this in one place, every handler stays clean and consistent
-
-func sendError(w http.ResponseWriter, code int, message string) {
-
-	w.WriteHeader(code)
-	fmt.Fprintf(w, message)
-}
-func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
-
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		log.Printf("%s %s", r.Method, r.URL.Path)
-		next(w, r)
-	}
-}
-func methodMiddleware(next http.HandlerFunc, allowedMethod string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != allowedMethod {
-			sendError(w, http.StatusMethodNotAllowed, "Method not allowed")
-			return
-		}
-		next(w, r)
-	}
-}
 
 // This is a handler — a function that runs when a request arrives
 // Every handler receives two things:
@@ -64,9 +37,8 @@ func main() {
 
 	//Tell Go: When someone requests "/", run homeHandler
 
-	http.HandleFunc("/", loggingMiddleware(methodMiddleware(homeHandler, "GET")))
-	http.HandleFunc("/about", loggingMiddleware(methodMiddleware(aboutHandler, "GET")))
-
+	http.HandleFunc("/", middleware.LoggingMiddleware(middleware.MethodMiddleware(homeHandler, "GET")))
+	http.HandleFunc("/about", middleware.LoggingMiddleware(middleware.MethodMiddleware(aboutHandler, "GET")))
 	// Start listening on port 9090
 	// This line BLOCKS — meaning the program stays running, waiting
 
